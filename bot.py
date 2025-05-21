@@ -575,10 +575,8 @@ async def handle_close_button(client, query: CallbackQuery):
         except:
             pass
 
-#🔥premium expiry notification. 
+#🔥 premium expiry notification and cleanup
 async def premium_expiry_warning():
-    warned_users = {}  # Track who has been warned
-
     while True:
         now = time.time()
         users = users_collection.find({"premium": {"$ne": None}})
@@ -591,25 +589,36 @@ async def premium_expiry_warning():
             remaining = expiry - now
 
             if remaining <= 0:
-                # Already expired
-                if warned_users.get(user_id) != "expired":
-                    try:
-                        await bot.send_message(
-                            user_id,
-                            f"❌ Your <b>{tier}</b> premium plan has <b>expired</b>.\n"
-                            "You have been moved back to the free plan.\n\n"
-                            "Renew now to get back your bonus points!",
-                            reply_markup=InlineKeyboardMarkup(
-                                [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
-                            )
+                try:
+                    # Send expiration message
+                    await bot.send_message(
+                        user_id,
+                        f"❌ Your <b>{tier}</b> premium plan has <b>expired</b>.\n"
+                        "You have been moved back to the free plan.\n\n"
+                        "Renew now to get back your bonus points!",
+                        reply_markup=InlineKeyboardMarkup(
+                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
                         )
-                        warned_users[user_id] = "expired"
-                    except Exception as e:
-                        logging.warning(f"Failed to send expiry message to {user_id}: {e}")
+                    )
+                except Exception as e:
+                    logging.warning(f"Failed to send expiry message to {user_id}: {e}")
+
+                # Remove premium from database
+                users_collection.update_one(
+                    {"id": user_id},
+                    {"$unset": {"premium": ""}}  # Remove the entire premium field
+                )
+
+                # Optional: Reset referral tier (if linked to premium)
+                users_collection.update_one(
+                    {"id": user_id},
+                    {"$set": {"referral_tier": None}}
+                )
+                
                 continue
 
-            if 3540 <= remaining <= 3660 and warned_users.get(user_id) != "1h":
-                # ~1 hour left
+            # ~1 hour left warning
+            if 3540 <= remaining <= 3660:
                 try:
                     await bot.send_message(
                         user_id,
@@ -619,12 +628,11 @@ async def premium_expiry_warning():
                             [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
                         )
                     )
-                    warned_users[user_id] = "1h"
                 except Exception as e:
                     logging.warning(f"Failed to send 1h warning to {user_id}: {e}")
 
-            elif 540 <= remaining <= 660 and warned_users.get(user_id) != "10m":
-                # ~10 minutes left
+            # ~10 minutes left warning
+            elif 540 <= remaining <= 660:
                 try:
                     await bot.send_message(
                         user_id,
@@ -634,7 +642,6 @@ async def premium_expiry_warning():
                             [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
                         )
                     )
-                    warned_users[user_id] = "10m"
                 except Exception as e:
                     logging.warning(f"Failed to send 10m warning to {user_id}: {e}")
 
