@@ -1,8 +1,6 @@
 # VIDEO BOT 
-## Hi, I am a Bot!
+## NORMAL VIDEO BOT 
 
-Welcome! I’m a Telegram bot built to help you share files, manage referrals, reward users with points, and offer premium plans — all in one smooth package.
+THIS BOT ONLY SENDS VIDEOS USING LIMITS. BUT WORK BEST 
 
-## You are a Bot!
-
-Well… not really. But if you're here to deploy or improve me, you’re basically my creator. So go ahead, make me better!
+## NO PREMIUM 
