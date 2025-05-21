@@ -30,7 +30,7 @@ DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "18000"))
 
 # ✅ Force Subscribe Setup
 id_pattern = re.compile(r'^.\d+$')
-AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1002546714412").split()]
+AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1002490575006").split()]
 
 # 🔰 Initialize Bot & Database
 bot = Client("video_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
