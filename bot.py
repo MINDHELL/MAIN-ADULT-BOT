@@ -35,15 +35,15 @@ AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AU
 # 🔰 Initialize Bot & Database
 bot = Client("video_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 mongo = MongoClient(MONGO_URL)
-db = mongo["VideoBot1"]
-collection = db["videos1"]
-users_collection = db["users1"]
-settings_collection = db["settings1"]
+db = mongo["VideoBot"]
+collection = db["videos"]
+users_collection = db["users"]
+settings_collection = db["settings"]
 
 # ✅ **Cache Optimization**
 video_cache = []
 last_cache_time = 0
-CACHE_EXPIRY = 300  # Refresh cache every 5 minutes
+CACHE_EXPIRY = 900  # Refresh cache every 5 minutes
 
 async def refresh_video_cache():
     global video_cache, last_cache_time
