@@ -439,6 +439,8 @@ async def list_premium_users(client, message):
     users = users_collection.find({"premium": {"$ne": None}})
     lines = []
 
+    current_time = datetime.datetime.now().timestamp()  # Get current time in timestamp format
+
     for i, user in enumerate(users, start=1):
         uid = user["id"]
         username = user.get("username")
@@ -447,6 +449,11 @@ async def list_premium_users(client, message):
 
         tier = user["premium"].get("tier", "Unknown").capitalize()
         expiry_ts = user["premium"].get("expiry", 0)
+
+        # Exclude users with expired premium
+        if expiry_ts <= current_time:
+            continue
+
         expiry = datetime.datetime.fromtimestamp(expiry_ts).strftime("%Y-%m-%d %H:%M:%S")
 
         lines.append(
