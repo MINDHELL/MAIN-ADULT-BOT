@@ -10,6 +10,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQ
 from pymongo import MongoClient
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
 from health_check import start_health_check
+from pyrogram.enums import ParseMode
 
 # 🔰 Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -55,23 +56,42 @@ def is_protection_enabled():
     setting = settings_collection.find_one({"_id": "content_protection"})
     return setting and setting.get("enabled", True)
 
-# ✅ **User Management**
+# ✅️ Tiers
+PREMIUM_TIERS = {
+    "silver": 10,
+    "gold": 20,
+    "diamond": 30,
+    "platinum": 40
+}
+
+REFERRAL_TIERS = {
+    5: ("silver", 10),
+    10: ("gold", 20),
+    20: ("diamond", 50)
+}
+
+# ✅ **User Management adding **
 async def add_user(user_id):
+    return get_user(user_id)
+
+# ✅️ ** user management**
+def get_user(user_id):
     user = users_collection.find_one({"id": user_id})
     if not user:
-        # Initialize user with default values
-        users_collection.insert_one({
+        settings = settings_collection.find_one({"_id": "points_settings"}) or {}
+        reset_time = settings.get("reset_time", DEFAULT_RESET_TIME)
+        user = {
             "id": user_id,
             "joined": datetime.datetime.utcnow(),
-            "videos_sent": 0,  # Initialize videos_sent field
-            "quota_reset_time": time.time() + DEFAULT_QUOTA_RESET_TIME  # Set the reset time for quota
-        })
-    else:
-        # Ensure "videos_sent" and "quota_reset_time" exist
-        if "videos_sent" not in user:
-            users_collection.update_one({"id": user_id}, {"$set": {"videos_sent": 0}})
-        if "quota_reset_time" not in user:
-            users_collection.update_one({"id": user_id}, {"$set": {"quota_reset_time": time.time() + DEFAULT_QUOTA_RESET_TIME}})
+            "points": DEFAULT_POINTS,
+            "points_reset_time": time.time() + reset_time,
+            "referral_points": 0,
+            "referrals": [],
+            "premium_used": 0,
+            "premium": None
+        }
+        users_collection.insert_one(user)
+    return user
 
 # ✅ **/users Command – Get Total Users**
 @bot.on_message(filters.command("users") & filters.user(OWNER_ID))
@@ -130,7 +150,15 @@ async def broadcast(client, message):
 @bot.on_message(filters.command("start"))
 async def start(client, message):
     user_id = message.from_user.id
+    args = message.text.split()
     await add_user(user_id)
+
+    if len(args) > 1 and args[1].startswith("ref-"):
+        ref_id = int(args[1].split("-")[1])
+        if ref_id != user_id:
+            user = get_user(user_id)
+            if ref_id not in user.get("referrals", []):
+                users_collection.update_one({"id": ref_id}, {"$addToSet": {"referrals": user_id}})
 
     if AUTH_CHANNEL:
         try:
@@ -146,11 +174,12 @@ async def start(client, message):
                 reply_markup=InlineKeyboardMarkup(btn),
             )
             return
-        except Exception:
-            pass
 
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🎥 Get Random Video", callback_data="get_random_video")]])
-    await message.reply_photo(WELCOME_IMAGE, caption="🎉 Welcome to the Video Bot!\n\n<b>𝖳𝗁𝗂𝗌 𝖡𝗈𝗍 𝖢𝗈𝗇𝗍𝖺𝗂𝗇𝗌 18+ 𝖢𝗈𝗇𝗍𝖾𝗇𝗍 𝖲𝗈 𝖪𝗂𝗇𝖽𝗅𝗒 𝖠𝖼𝖼𝖾𝗌𝗌 𝖨𝗍 𝖶𝗂𝗍𝗁 𝖸𝗈𝗎𝗋 𝖮𝗐𝗇 𝖱𝗂𝗌𝗄. 𝖳𝗁𝖾 𝖬𝖺𝗍𝖾𝗋𝗂𝖺𝗅 𝖬𝖺𝗒 𝖨𝗇𝖼𝗅𝗎𝖽𝖾 𝖤𝗑𝗉𝗅𝗂𝖼𝗂𝗍 𝖮𝗋 𝖦𝗋𝖺𝗉𝗁𝗂𝖼 𝖢𝗈𝗇𝗍𝖺𝖼𝗍 𝖳𝗁𝖺𝗍 𝖨𝗌 𝖴𝗇𝗌𝗎𝗂𝗍𝖺𝖻𝗅𝖾 𝖥𝗈𝗋 𝖬𝗂𝗇𝗈𝗋𝗌. 𝖲𝗈 𝖢𝗁𝗂𝗅𝖽𝗋𝖾𝗇𝗌 𝖯𝗅𝖾𝖺𝗌𝖾 𝖲𝗍𝖺𝗒 𝖠𝗐𝖺𝗒.</b>\n\n 𝖯𝗅𝖾𝖺𝗌𝖾 𝖢𝗁𝖾𝖼𝗄 Disclaimer and About 𝖡𝖾𝖿𝗈𝗋𝖾 𝖴𝗌𝗂𝗇𝗀 𝖳𝗁𝗂𝗌 𝖡𝗈𝗍..\n\n ", reply_markup=keyboard)
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("🎥 Get Random Video", callback_data="get_random_video")]]
+    )
+    await message.reply_photo(
+        WELCOME_IMAGE, caption="🎉 Welcome to the Video Bot!\n\n<b>𝖳𝗁𝗂𝗌 𝖡𝗈𝗍 𝖢𝗈𝗇𝗍𝖺𝗂𝗇𝗌 18+ 𝖢𝗈𝗇𝗍𝖾𝗇𝗍 𝖲𝗈 𝖪𝗂𝗇𝖽𝗅𝗒 𝖠𝖼𝖼𝖾𝗌𝗌 𝖨𝗍 𝖶𝗂𝗍𝗁 𝖸𝗈𝗎𝗋 𝖮𝗐𝗇 𝖱𝗂𝗌𝗄. 𝖳𝗁𝖾 𝖬𝖺𝗍𝖾𝗋𝗂𝖺𝗅 𝖬𝖺𝗒 𝖨𝗇𝖼𝗅𝗎𝖽𝖾 𝖤𝗑𝗉𝗅𝗂𝖼𝗂𝗍 𝖮𝗋 𝖦𝗋𝖺𝗉𝗁𝗂𝖼 𝖢𝗈𝗇𝗍𝖺𝖼𝗍 𝖳𝗁𝖺𝗍 𝖨𝗌 𝖴𝗇𝗌𝗎𝗂𝗍𝖺𝖻𝗅𝖾 𝖥𝗈𝗋 𝖬𝗂𝗇𝗈𝗋𝗌. 𝖲𝗈 𝖢𝗁𝗂𝗅𝖽𝗋𝖾𝗇𝗌 𝖯𝗅𝖾𝖺𝗌𝖾 𝖲𝗍𝖺𝗒 𝖠𝗐𝖺𝗒.</b>\n\n 𝖯𝗅𝖾𝖺𝗌𝖾 𝖢𝗁𝖾𝖼𝗄 Disclaimer and About 𝖡𝖾𝖿𝗈𝗋𝖾 𝖴𝗌𝗂𝗇𝗀 𝖳𝗁𝗂𝗌 𝖡𝗈𝗍..\n\n ", reply_markup=keyboard)
 
 
 # ✅ **Get Random Video**
@@ -161,35 +190,37 @@ async def send_random_video(client, chat_id):
         await client.send_message(chat_id, "⚠ No videos available. Use /index first!")
         return
 
-    # Check if user is the owner (unlimited quota)
     if chat_id == OWNER_ID:
-        user = {"videos_sent": 0, "quota_reset_time": time.time()}
+        consume = False
     else:
-        user = users_collection.find_one({"id": chat_id})
-
-    if user["videos_sent"] >= VIDEO_LIMIT and time.time() < user["quota_reset_time"]:
-        reset_time = datetime.datetime.fromtimestamp(user["quota_reset_time"]).strftime("%Y-%m-%d %H:%M:%S")
-        await client.send_message(
-            chat_id,
-            f"⚠️ You have reached your video limit of {VIDEO_LIMIT} videos. Your quota will reset at {reset_time}.",
-        )
-        return
+        user = get_user(chat_id)
+        user = await reset_points_if_needed(user)
+        if user["points"] > 0:
+            users_collection.update_one({"id": chat_id}, {"$inc": {"points": -1}})
+        elif user["referral_points"] > 0:
+            users_collection.update_one({"id": chat_id}, {"$inc": {"referral_points": -1}})
+        elif user.get("premium") and time.time() < user["premium"].get("expiry", 0):
+            tier = user["premium"]["tier"]
+            max_premium = PREMIUM_TIERS.get(tier, 0)
+            if user.get("premium_used", 0) < max_premium:
+                users_collection.update_one({"id": chat_id}, {"$inc": {"premium_used": 1}})
+            else:
+                reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
+                await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}.")
+                return
+        else:
+            reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
+            await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}.")
+            return
 
     video = video_cache.pop()
     try:
         message = await client.get_messages(CHANNEL_ID, video["message_id"])
         if message and message.video:
-            sent_msg = await client.send_video(
-                chat_id, video=message.video.file_id, caption="Thanks 😊", protect_content=True
-            )
-
-            if chat_id != OWNER_ID:  # Only update quota for non-owner users
-                users_collection.update_one({"id": chat_id}, {"$inc": {"videos_sent": 1}})
-
+            sent_msg = await client.send_video(chat_id, video=message.video.file_id, caption="Thanks 😊", protect_content=True)
             if AUTO_DELETE_TIME > 0:
                 await asyncio.sleep(AUTO_DELETE_TIME)
                 await sent_msg.delete()
-
     except FloodWait as e:
         await asyncio.sleep(e.value)
         await send_random_video(client, chat_id)
@@ -201,38 +232,89 @@ async def random_video_callback(client, callback_query: CallbackQuery):
     asyncio.create_task(send_random_video(client, callback_query.message.chat.id))
 
 
-# ✅ **Quota Status**
-@bot.on_message(filters.command("quota"))
-async def quota_status(client, message):
-    user_id = message.from_user.id
-    if user_id == OWNER_ID:
-        await message.reply_text("✅ **You are the owner and have unlimited quota!**")
-        return
+# ✅ **Points  Status**
+async def calculate_total_points(user):
+    total = user.get("points", 0)
+    referral_points = user.get("referral_points", 0)
+    premium = user.get("premium")
+    premium_points = 0
+    if premium and time.time() < premium.get("expiry", 0):
+        tier = premium.get("tier")
+        max_premium = PREMIUM_TIERS.get(tier, 0)
+        used = user.get("premium_used", 0)
+        premium_points = max_premium - used if used < max_premium else 0
+        total += premium_points
+    total += referral_points
+    return total, referral_points, premium_points
 
-    user = users_collection.find_one({"id": user_id})
-    if user:
-        videos_left = max(0, VIDEO_LIMIT - user["videos_sent"])
-        current_time = time.time()
-        
-        # If the quota reset time has already passed, reset it
-        if current_time > user["quota_reset_time"]:
-            new_reset_time = current_time + settings_collection.find_one({"_id": "quota_settings"})["quota_reset_time"]
-            users_collection.update_one({"id": user_id}, {"$set": {"quota_reset_time": new_reset_time, "videos_sent": 0}})
+
+async def reset_points_if_needed(user):
+    settings = settings_collection.find_one({"_id": "points_settings"}) or {}
+    reset_interval = settings.get("reset_time", DEFAULT_RESET_TIME)
+    if time.time() > user.get("points_reset_time", 0):
+        referral_points = 0
+        for r, (name, pts) in REFERRAL_TIERS.items():
+            if len(user.get("referrals", [])) >= r:
+                referral_points = pts
+        update_fields = {
+            "points": DEFAULT_POINTS,
+            "points_reset_time": time.time() + reset_interval,
+            "referral_points": referral_points
+        }
+        if user.get("premium") and time.time() < user["premium"].get("expiry", 0):
+            update_fields["premium_used"] = 0
+        users_collection.update_one({"id": user["id"]}, {"$set": update_fields})
+        user = get_user(user["id"])
+    return user
+
+# ✅️ **points **
+@bot.on_message(filters.command("points"))
+async def check_points(client, message):
+    user = get_user(message.from_user.id)
+    user = await reset_points_if_needed(user)
+    points, ref, prem = await calculate_total_points(user)
+    reset_time = datetime.datetime.fromtimestamp(user["points_reset_time"]).strftime("%Y-%m-%d %H:%M:%S")
+    time_left = int(user["points_reset_time"] - time.time())
+    await message.reply_text(
+        f"⭐ Points: {user.get('points', 0)}\n"
+        f"🤝 Referral Points: {ref}\n"
+        f"💎 Premium Bonus Left: {prem}\n"
+        f"⏳ Next Reset In: {str(datetime.timedelta(seconds=time_left))}\n"
+        f"🕒 Reset At: {reset_time}"
+    )
+
+# ✅️ **reset time option **
+@bot.on_message(filters.command("setpoints") & filters.user(OWNER_ID))
+async def set_points_reset(client, message):
+    try:
+        _, duration = message.text.split()
+        if duration.endswith("h"):
+            hours = int(duration[:-1])
+            reset_time = hours * 3600
+        elif duration.endswith("m"):
+            minutes = int(duration[:-1])
+            reset_time = minutes * 60
         else:
-            new_reset_time = user["quota_reset_time"]
-            
-            reset_time = datetime.datetime.fromtimestamp(new_reset_time).strftime("%Y-%m-%d %H:%M:%S")
-            time_left = max(0, new_reset_time - current_time)
-            
-            await message.reply_text(
-            f"📊 **Your Quota Status:**\n"
-            f"📅 Quota Reset Time: {reset_time}\n"
-            f"🎥 Videos Sent: {user['videos_sent']}/{VIDEO_LIMIT}\n"
-            f"⏳ Time Until Reset: {str(datetime.timedelta(seconds=int(time_left)))}\n"
-            f"🕒 Videos Left: {videos_left}"
-        )
-    else:
-        await message.reply_text("⚠️ User not found! Please start the bot first.")
+            reset_time = int(duration)
+
+        # Save in settings
+        settings_collection.update_one({"_id": "points_settings"}, {"$set": {"reset_time": reset_time}}, upsert=True)
+
+        # Optional: force update all users' next reset time immediately
+        new_reset_time = time.time() + reset_time
+        users_collection.update_many({}, {"$set": {"points_reset_time": new_reset_time}})
+
+        await message.reply_text(f"✅ Points reset interval updated to {duration}!")
+    except:
+        await message.reply_text("⚠ Usage: /setpoints <duration> (e.g., /setpoints 6h or /setpoints 30m)")
+
+
+@bot.on_message(filters.command("getpoints") & filters.user(OWNER_ID))
+async def get_points_reset(client, message):
+    settings = settings_collection.find_one({"_id": "points_settings"}) or {}
+    reset_time = settings.get("reset_time", DEFAULT_RESET_TIME)
+    duration_str = str(datetime.timedelta(seconds=reset_time))
+    await message.reply_text(f"⏱ Current points reset duration: {duration_str}")
 
 
 # ✅ **Set Quota Duration (Only for Owner)**
