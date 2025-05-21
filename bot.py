@@ -317,37 +317,46 @@ async def get_points_reset(client, message):
     await message.reply_text(f"⏱ Current points reset duration: {duration_str}")
 
 
-# ✅ **Set Quota Duration (Only for Owner)**
-@bot.on_message(filters.command("setquota") & filters.user(OWNER_ID))
-async def set_quota_duration(client, message):
-    try:
-        _, hours = message.text.split()
-        hours = int(hours)
-        new_quota_reset_time = hours * 60 * 60  # Convert hours to seconds
+# ✅ ** my plans **
+@bot.on_message(filters.command("myplans"))
+async def my_plans(client, message):
+    user = get_user(message.from_user.id)
+    premium = user.get("premium")
+    text = "✨ <b>Your Current Plan</b> ✨\n\n"
 
-        settings_collection.update_one(
-            {"_id": "quota_settings"}, {"$set": {"quota_reset_time": new_quota_reset_time}}, upsert=True
-        )
-        
-        # Update all users' quota reset time immediately
-        current_time = time.time()
-        users_collection.update_many(
-            {}, {"$set": {"quota_reset_time": current_time + new_quota_reset_time}}
-        )
-
-        await message.reply_text(f"✅ **Quota reset duration updated to {hours} hours!**")
-    except (ValueError, IndexError):
-        await message.reply_text("⚠ Usage: `/setquota <hours>` (e.g., `/setquota 6` for 6 hours)")
-
-
-@bot.on_message(filters.command("getquota") & filters.user(OWNER_ID))
-async def get_quota_setting(client, message):
-    settings = settings_collection.find_one({"_id": "quota_settings"})
-    if settings and "quota_reset_time" in settings:
-        duration = str(datetime.timedelta(seconds=settings["quota_reset_time"]))
-        await message.reply_text(f"⏱ **Current quota reset duration:** `{duration}`")
+    # Premium Tier Info
+    if premium and time.time() < premium.get("expiry", 0):
+        expiry = datetime.datetime.fromtimestamp(premium["expiry"]).strftime("%d %b %Y")
+        tier = premium["tier"].capitalize()
+        text += f"💎 <b>Premium Tier:</b> {tier}\n"
+        text += f"⏳ <b>Valid Until:</b> {expiry}\n"
+        text += f"⭐ <b>Bonus Points:</b> {PREMIUM_TIERS.get(premium['tier'], 0)} / reset\n"
     else:
-        await message.reply_text("⚠ No custom quota reset duration set.")
+        text += "💎 <b>Premium Tier:</b> None\n"
+        text += "➕ <i>Upgrade to enjoy extra points daily!</i>\n"
+
+    # Referral Info
+    referrals = user.get("referrals", [])
+    referral_count = len(referrals)
+    referral_tier = "None"
+    referral_bonus = 0
+    for count, (tier, bonus) in sorted(REFERRAL_TIERS.items()):
+        if referral_count >= count:
+            referral_tier = tier.capitalize()
+            referral_bonus = bonus
+
+    text += "\n👥 <b>Referral Info</b>\n"
+    if referral_count > 0:
+        text += f"🥇 <b>Referral Tier:</b> {referral_tier}\n"
+        text += f"👤 <b>Referrals:</b> {referral_count}\n"
+        text += f"🎁 <b>Bonus:</b> +{referral_bonus} / reset"
+    else:
+        text += (
+            "📭 <i>You haven't referred anyone yet.</i>\n"
+            "🎯 Invite friends to unlock bonus points!"
+        )
+
+    await message.reply_text(text, parse_mode=ParseMode.HTML)
         
 
 # ✅ **Index Videos**
@@ -378,6 +387,97 @@ async def index_videos(client, message):
 
     await refresh_video_cache()
     await message.reply_text(f"✅ Indexed {indexed_count} new videos!" if indexed_count else "⚠ No new videos found!")
+
+# ✅️ plans
+@bot.on_message(filters.command("plans"))
+async def show_plans(client, message):
+    text = (
+        "💎 **Premium Plans**\n\n"
+        "• **Silver** – 10 daily points\n"
+        "   └ Rs. 29 / $0.35\n\n"
+        "• **Gold** – 20 daily points\n"
+        "   └ Rs. 59 / $0.70\n\n"
+        "• **Diamond** – 30 daily points\n"
+        "   └ Rs. 89 / $1.05\n\n"
+        "• **Platinum** – 40 daily points\n"
+        "   └ Rs. 129 / $1.50\n\n"
+        "⏳ Plans renew daily until expiry.\n"
+        "🧾 Custom duration available.\n\n"
+        "📞 Contact us to buy a plan!"
+    )
+
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🛒 Buy Plan", url="https://t.me/cosmos6t")]
+    ])
+    await message.reply_text(text, reply_markup=buttons)
+
+# ✅️ **PREMIUM SYSTEM**
+@bot.on_message(filters.command("addpremium") & filters.user(OWNER_ID))
+async def add_premium(client, message):
+    try:
+        _, uid, level, days = message.text.split()
+        uid = int(uid)
+        days = int(days)
+        expiry = time.time() + (days * 86400)
+        users_collection.update_one({"id": uid}, {"$set": {"premium": {"tier": level.lower(), "expiry": expiry}, "premium_used": 0}})
+        await message.reply_text("✅ Premium added.")
+    except:
+        await message.reply_text("Usage: /addpremium <user_id> <tier> <days>")
+
+
+@bot.on_message(filters.command("removepremium") & filters.user(OWNER_ID))
+async def remove_premium(client, message):
+    try:
+        _, uid = message.text.split()
+        uid = int(uid)
+        users_collection.update_one({"id": uid}, {"$unset": {"premium": "", "premium_used": ""}})
+        await message.reply_text("✅ Premium removed.")
+    except:
+        await message.reply_text("Usage: /removepremium <user_id>")
+
+@bot.on_message(filters.command("premiumusers") & filters.user(OWNER_ID))
+async def list_premium_users(client, message):
+    users = users_collection.find({"premium": {"$ne": None}})
+    lines = []
+
+    for i, user in enumerate(users, start=1):
+        uid = user["id"]
+        username = user.get("username")
+        username_display = f"@{username}" if username else "—"
+        username_link = f"[{username_display}](https://t.me/{username})" if username else "`—`"
+
+        tier = user["premium"].get("tier", "Unknown").capitalize()
+        expiry_ts = user["premium"].get("expiry", 0)
+        expiry = datetime.datetime.fromtimestamp(expiry_ts).strftime("%Y-%m-%d %H:%M:%S")
+
+        lines.append(
+            f"**{i}.** 👤 **User ID:** `{uid}`\n"
+            f"   🔗 **Username:** {username_link}\n"
+            f"   💎 **Tier:** `{tier}`\n"
+            f"   ⏰ **Expiry:** `{expiry}`\n"
+        )
+
+    if not lines:
+        await message.reply_text("❌ No premium users found.")
+        return
+
+    text_output = "\n".join(lines)
+
+    # Send as text message if short enough
+    if len(text_output) <= 4096:
+        await message.reply_text(f"**📋 Premium Users List:**\n\n{text_output}", disable_web_page_preview=True)
+    else:
+        await message.reply_text("⚠️ Too many users to display in chat. Sending as file instead.")
+
+    # Also send as file
+    file_path = "/tmp/premium_users.txt"
+    with open(file_path, "w") as f:
+        f.write(text_output)
+
+    await message.reply_document(file_path, caption="📄 Premium Users List")
+
+
+
 
 
 @bot.on_message(filters.command("files") & filters.user(OWNER_ID))
