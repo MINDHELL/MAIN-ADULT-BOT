@@ -476,8 +476,42 @@ async def list_premium_users(client, message):
 
     await message.reply_document(file_path, caption="📄 Premium Users List")
 
+# ✅️ **REFERRAL SYSTEM **
+@bot.on_message(filters.command("referral"))
+async def referral_handler(client, message):
+    user_id = message.from_user.id
+    referral_link = f"https://t.me/RundumBot?start=ref-{user_id}"
 
+    text = (
+        "👥 <b>Invite & Earn Rewards!</b>\n\n"
+        "Share the link below with your friends. When they join and verify, you get bonus points every reset!\n\n"
+        f"🔗 <b>Your Referral Link:</b>\n<code>{referral_link}</code>\n\n"
+        "🏆 <b>Referral Tiers:</b>\n"
+        "• 5 Referrals → <b>Silver</b> ⭐ (+10 pts/reset)\n"
+        "• 10 Referrals → <b>Gold</b> 🌟 (+20 pts/reset)\n"
+        "• 20 Referrals → <b>Diamond</b> 💎 (+50 pts/reset)\n\n"
+        "⏳ <i>More referrals = more rewards!</i>"
+    )
 
+    await message.reply_text(text, parse_mode=ParseMode.HTML)
+
+@bot.on_message(filters.command("myreferrals"))
+async def my_referrals(client, message):
+    user = get_user(message.from_user.id)
+    referrals = user.get("referrals", [])
+    count = len(referrals)
+    tier_name = "None"
+
+    for threshold, (name, _) in sorted(REFERRAL_TIERS.items(), reverse=True):
+        if count >= threshold:
+            tier_name = name.capitalize()
+            break
+
+    await message.reply_text(
+        f"🤝 You have referred **{count}** user(s).\n"
+        f"🏅 Your current referral tier: **{tier_name}**\n\n"
+        "🔗 Share your referral link using /referral"
+    )
 
 
 @bot.on_message(filters.command("files") & filters.user(OWNER_ID))
@@ -535,9 +569,76 @@ async def handle_close_button(client, query: CallbackQuery):
         except:
             pass
 
+#🔥premium expiry notification. 
+async def premium_expiry_warning():
+    warned_users = {}  # Track who has been warned
+
+    while True:
+        now = time.time()
+        users = users_collection.find({"premium": {"$ne": None}})
+        
+        for user in users:
+            user_id = user["id"]
+            premium = user.get("premium", {})
+            tier = premium.get("tier", "").capitalize()
+            expiry = premium.get("expiry", 0)
+            remaining = expiry - now
+
+            if remaining <= 0:
+                # Already expired
+                if warned_users.get(user_id) != "expired":
+                    try:
+                        await bot.send_message(
+                            user_id,
+                            f"❌ Your <b>{tier}</b> premium plan has <b>expired</b>.\n"
+                            "You have been moved back to the free plan.\n\n"
+                            "Renew now to get back your bonus points!",
+                            reply_markup=InlineKeyboardMarkup(
+                                [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                            )
+                        )
+                        warned_users[user_id] = "expired"
+                    except Exception as e:
+                        logging.warning(f"Failed to send expiry message to {user_id}: {e}")
+                continue
+
+            if 3540 <= remaining <= 3660 and warned_users.get(user_id) != "1h":
+                # ~1 hour left
+                try:
+                    await bot.send_message(
+                        user_id,
+                        f"⚠️ Your <b>{tier}</b> premium plan will expire in <b>1 hour</b>.\n\n"
+                        "Renew now to continue enjoying bonus points!",
+                        reply_markup=InlineKeyboardMarkup(
+                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                        )
+                    )
+                    warned_users[user_id] = "1h"
+                except Exception as e:
+                    logging.warning(f"Failed to send 1h warning to {user_id}: {e}")
+
+            elif 540 <= remaining <= 660 and warned_users.get(user_id) != "10m":
+                # ~10 minutes left
+                try:
+                    await bot.send_message(
+                        user_id,
+                        f"⏳ Your <b>{tier}</b> premium plan will expire in <b>10 minutes</b>!\n\n"
+                        "Don't miss out—renew now to keep enjoying your benefits.",
+                        reply_markup=InlineKeyboardMarkup(
+                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                        )
+                    )
+                    warned_users[user_id] = "10m"
+                except Exception as e:
+                    logging.warning(f"Failed to send 10m warning to {user_id}: {e}")
+
+        await asyncio.sleep(300)  # Check every 5 minutes
 
 
 # ✅ **Run the Bot**
 if __name__ == "__main__":
     threading.Thread(target=start_health_check, daemon=True).start()
+    loop = asyncio.get_event_loop()
+    loop.create_task(premium_expiry_warning())
     bot.run()
+    
