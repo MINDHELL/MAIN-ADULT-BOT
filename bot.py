@@ -26,7 +26,7 @@ OWNER_ID = int(os.getenv("OWNER_ID", "7246766108"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
 AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "7200"))
 VIDEO_LIMIT = int(os.getenv("VIDEO_LIMIT", "5"))  # Set video limit per user
-DEFAULT_QUOTA_RESET_TIME = int(os.getenv("DEFAULT_QUOTA_RESET_TIME", "86400"))  # Default quota reset time in seconds (24 hours)
+DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "86400"))  # Default quota reset time in seconds (24 hours)
 
 # ✅ Force Subscribe Setup
 id_pattern = re.compile(r'^.\d+$')
