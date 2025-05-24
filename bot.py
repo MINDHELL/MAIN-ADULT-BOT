@@ -513,7 +513,8 @@ async def my_referrals(client, message):
 
     await message.reply_text(
         f"🤝 You have referred **{count}** user(s).\n"
-        f"🏅 Your current referral tier: **{tier_name}**\n\n"
+        f"🏅 Your current referral tier: **{tier_name}**\n"
+        "✨️ Referrals are permanent so, refer and earn points🔥.\n\n"
         "🔗 Share your referral link using /referral"
     )
 
