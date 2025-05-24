@@ -17,20 +17,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 🔰 Environment Variables
-API_ID = int(os.getenv("API_ID", "27083483"))
-API_HASH = os.getenv("API_HASH", "1ba790464745c13ce149649d73137e52")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7307399049:AAFXnD-gVXAUi4NlyVWk45FwN-g-JONskGE")
+API_ID = int(os.getenv("API_ID", "27788368"))
+API_HASH = os.getenv("API_HASH", "9df7e9ef3d7e4145270045e5e43e1081")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7692429836:AAFhPqKJghT0G524pxCobrj-XfiXefTGnmA")
 MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://aarshhub:6L1PAPikOnAIHIRA@cluster0.6shiu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1002661126109"))
-OWNER_ID = int(os.getenv("OWNER_ID", "7246766108"))
+CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1002465297334"))
+OWNER_ID = int(os.getenv("OWNER_ID", "6860316927"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
 AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "7200"))
-DEFAULT_POINTS = int(os.getenv("DEFAULT_POINTS", "5")) # Set video limit per user
-DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "86400"))  # Default quota reset time in seconds (24 hours)
+DEFAULT_POINTS = int(os.getenv("DEFAULT_POINTS", "5"))
+DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "18000"))
 
 # ✅ Force Subscribe Setup
 id_pattern = re.compile(r'^.\d+$')
-AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1002546714412").split()]
+AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1002490575006").split()]
 
 # 🔰 Initialize Bot & Database
 bot = Client("video_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
