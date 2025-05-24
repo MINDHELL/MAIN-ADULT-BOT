@@ -65,9 +65,9 @@ PREMIUM_TIERS = {
 }
 
 REFERRAL_TIERS = {
-    5: ("silver", 10),
-    10: ("gold", 20),
-    20: ("diamond", 50)
+    10: ("silver", 5),
+    30: ("gold", 10),
+    50: ("diamond", 20)
 }
 
 # ✅ **User Management adding **
@@ -206,11 +206,11 @@ async def send_random_video(client, chat_id):
                 users_collection.update_one({"id": chat_id}, {"$inc": {"premium_used": 1}})
             else:
                 reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
-                await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}.")
+                await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}. please upgrade your plan or wait❗️")
                 return
         else:
             reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
-            await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}.")
+            await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}. please upgrade your plan or wait❗️")
             return
 
     video = video_cache.pop()
@@ -402,6 +402,8 @@ async def show_plans(client, message):
         "• **Platinum** – 40 daily points\n"
         "   └ Rs. 129 / $1.50\n\n"
         "⏳ Plans renew daily until expiry.\n"
+        "🔥 Above plans are monthly.\n"
+        "❤️ 20K+ FILES 😮‍💨.\n"
         "🧾 Custom duration available.\n\n"
         "📞 Contact us to buy a plan!"
     )
