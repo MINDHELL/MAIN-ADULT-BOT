@@ -25,7 +25,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1002661126109"))
 OWNER_ID = int(os.getenv("OWNER_ID", "7246766108"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
 AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "7200"))
-VIDEO_LIMIT = int(os.getenv("VIDEO_LIMIT", "15"))  # Set video limit per user
+VIDEO_LIMIT = int(os.getenv("VIDEO_LIMIT", "5"))  # Set video limit per user
 DEFAULT_QUOTA_RESET_TIME = int(os.getenv("DEFAULT_QUOTA_RESET_TIME", "86400"))  # Default quota reset time in seconds (24 hours)
 
 # ✅ Force Subscribe Setup
@@ -391,6 +391,7 @@ async def index_videos(client, message):
 # ✅️ plans
 @bot.on_message(filters.command("plans"))
 async def show_plans(client, message):
+    photo_url = "https://envs.sh/s4V.jpg"
     text = (
         "💎 **Premium Plans**\n\n"
         "• **Silver** – 10 daily points\n"
@@ -403,13 +404,14 @@ async def show_plans(client, message):
         "   └ Rs. 129 / $1.50\n\n"
         "⏳ Plans renew daily until expiry.\n"
         "🔥 Above plans are monthly.\n"
-        "❤️ 20K+ FILES 😮‍💨.\n"
+        "❤️ Acess to unlimited files 😮‍💨.\n"
+        "✨️ Must check Disclaimer for more info.\n"
         "🧾 Custom duration available.\n\n"
         "📞 Contact us to buy a plan!"
     )
 
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛒 Buy Plan", url="https://t.me/cosmos6t")]
+        [InlineKeyboardButton("🛒 Buy Plan", url="https://t.me/Xsupprt4bot")]
     ])
     await message.reply_text(text, reply_markup=buttons)
 
@@ -489,9 +491,9 @@ async def referral_handler(client, message):
         "Share the link below with your friends. When they join and verify, you get bonus points every reset!\n\n"
         f"🔗 <b>Your Referral Link:</b>\n<code>{referral_link}</code>\n\n"
         "🏆 <b>Referral Tiers:</b>\n"
-        "• 5 Referrals → <b>Silver</b> ⭐ (+10 pts/reset)\n"
-        "• 10 Referrals → <b>Gold</b> 🌟 (+20 pts/reset)\n"
-        "• 20 Referrals → <b>Diamond</b> 💎 (+50 pts/reset)\n\n"
+        "• 10 Referrals → <b>Silver</b> ⭐ (+5 pts/reset)\n"
+        "• 30 Referrals → <b>Gold</b> 🌟 (+10 pts/reset)\n"
+        "• 50 Referrals → <b>Diamond</b> 💎 (+20 pts/reset)\n\n"
         "⏳ <i>More referrals = more rewards!</i>"
     )
 
@@ -533,8 +535,15 @@ async def disclaimer_message(client, message):
         "2. We do not host or promote any copyrighted content.\n"
         "3. All media is shared from publicly available sources.\n"
         "4. Users are responsible for the content they access.\n"
-        "5. We reserve the right to block users for misuse or abuse.\n"
-        "6. FOR ANY ISSUE DM OWNER @XSUPPRT3BOT.\n\n" 
+        "5. We reserve the right to block users for misuse or abuse.\n\n"
+        " **PAYMENT RULES**\n\n"
+        "1. Must check all plans before paying.\n"
+        "2. All plans are monthly based, weekly also available.\n"
+        "3. No Refund will be given once purchased.\n"
+        "4. Only serious buyers dm owner.\n"
+        "5. Upi,gift cards(inr) are accepted.\n"
+        "6. For foreign users, plan starts from $1.\n" 
+        "7. FOR ANY ISSUE DM OWNER @XSUPPRT4BOT.\n\n" 
         "By using this bot, you agree to these terms.",
         reply_markup=keyboard
     )
@@ -549,7 +558,7 @@ async def close_disclaimer_callback(client, callback_query: CallbackQuery):
 async def about_command(client, message):
     await message.reply_text(
         text=(
-            f"<b>○ Creator : <a href='https://t.me/Xsupprt3bot'>This Person</a>\n"
+            f"<b>○ Creator : <a href='https://t.me/Xsupprt4bot'>This Person</a>\n"
             f"○ Language : <code>Python3</code>\n"
             f"○ Library : <a href='https://docs.pyrogram.org/'>Pyrogram asyncio</a>\n"
             f"○ Source Code : <a href='https://t.me/Xsupprt3bot'>Click here </a>\n"
@@ -596,7 +605,7 @@ async def premium_expiry_warning():
                             "You have been moved back to the free plan.\n\n"
                             "Renew now to get back your bonus points!",
                             reply_markup=InlineKeyboardMarkup(
-                                [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                                [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/Xsupprt4bot")]]
                             )
                         )
                         warned_users[user_id] = "expired"
@@ -612,7 +621,7 @@ async def premium_expiry_warning():
                         f"⚠️ Your <b>{tier}</b> premium plan will expire in <b>1 hour</b>.\n\n"
                         "Renew now to continue enjoying bonus points!",
                         reply_markup=InlineKeyboardMarkup(
-                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/Xsupprt4bot")]]
                         )
                     )
                     warned_users[user_id] = "1h"
@@ -627,7 +636,7 @@ async def premium_expiry_warning():
                         f"⏳ Your <b>{tier}</b> premium plan will expire in <b>10 minutes</b>!\n\n"
                         "Don't miss out—renew now to keep enjoying your benefits.",
                         reply_markup=InlineKeyboardMarkup(
-                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/cosmos6t")]]
+                            [[InlineKeyboardButton("💎 Contact Admin", url="https://t.me/Xsupprt4bot")]]
                         )
                     )
                     warned_users[user_id] = "10m"
