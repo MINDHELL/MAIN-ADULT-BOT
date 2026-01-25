@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 API_ID = int(os.getenv("API_ID", "37371391"))
 API_HASH = os.getenv("API_HASH", "37895f967d284f6781f99e9beef21ebf")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8400031917:AAHzU3VA16otnPkYHFxZihNTWRNN4zrNuvQ")
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://aarshhub:6L1PAPikOnAIHIRA@cluster0.6shiu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://tgpurpose640:JkxqDWtmLTPtqf43@cluster0.1nlgp9s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1003789202882"))
 OWNER_ID = int(os.getenv("OWNER_ID", "7232121375"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
@@ -30,7 +30,7 @@ DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "18000"))
 
 # ✅ Force Subscribe Setup
 id_pattern = re.compile(r'^.\d+$')
-AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1002546714412").split()]
+AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in os.getenv("AUTH_CHANNEL", "-1003402069466").split()]
 
 # 🔰 Initialize Bot & Database
 bot = Client("video_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
