@@ -196,12 +196,15 @@ async def send_random_video(client, chat_id):
         user = get_user(chat_id)
         user = await reset_points_if_needed(user)
 
+        quota_used = False  # 🔐 critical flag
+
         # 1️⃣ Daily Free Points
         if user.get("points", 0) > 0:
             users_collection.update_one(
                 {"id": chat_id},
                 {"$inc": {"points": -1}}
             )
+            quota_used = True
 
         # 2️⃣ Referral Points
         elif user.get("referral_points", 0) > 0:
@@ -209,6 +212,7 @@ async def send_random_video(client, chat_id):
                 {"id": chat_id},
                 {"$inc": {"referral_points": -1}}
             )
+            quota_used = True
 
         # 3️⃣ Premium Daily Bonus
         elif user.get("premium") and time.time() < user["premium"].get("expiry", 0):
@@ -220,17 +224,18 @@ async def send_random_video(client, chat_id):
                     {"id": chat_id},
                     {"$inc": {"premium_used": 1}}
                 )
-            else:
-                pass  # move to paid credits
+                quota_used = True
 
-        # 4️⃣ Paid Credits (NEW)
-        elif user.get("paid_credits", 0) > 0:
+        # 4️⃣ Paid Credits
+        if not quota_used and user.get("paid_credits", 0) > 0:
             users_collection.update_one(
                 {"id": chat_id},
                 {"$inc": {"paid_credits": -1}}
             )
+            quota_used = True
 
-        else:
+        # ❌ No quota available
+        if not quota_used:
             reset_time = datetime.datetime.fromtimestamp(
                 user["points_reset_time"]
             ).strftime("%Y-%m-%d %H:%M:%S")
@@ -243,6 +248,7 @@ async def send_random_video(client, chat_id):
             )
             return
 
+    # ✅ SEND VIDEO ONLY IF QUOTA WAS USED
     video = video_cache.pop()
     try:
         msg = await client.get_messages(CHANNEL_ID, video["message_id"])
