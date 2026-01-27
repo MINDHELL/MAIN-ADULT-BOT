@@ -546,6 +546,78 @@ async def add_credits(client, message):
             "Usage: /addcredits <user_id> <credits>"
         )
 
+ # ✅️ ** REMOVE CREDITS **
+/removecredits <user_id> <credits>
+
+@bot.on_message(filters.command("removecredits") & filters.user(OWNER_ID))
+async def remove_credits(client, message):
+    try:
+        _, user_id, credits = message.text.split()
+        user_id = int(user_id)
+        credits = int(credits)
+
+        user = users_collection.find_one({"id": user_id})
+        if not user:
+            await message.reply("❌ User not found.")
+            return
+
+        current = user.get("paid_credits", 0)
+        new_credits = max(0, current - credits)
+
+        users_collection.update_one(
+            {"id": user_id},
+            {"$set": {"paid_credits": new_credits}}
+        )
+
+        await message.reply(
+            f"✅ Credits updated\n\n"
+            f"👤 User: `{user_id}`\n"
+            f"➖ Removed: {credits}\n"
+            f"💳 Remaining: {new_credits}"
+        )
+
+    except Exception:
+        await message.reply(
+            "❌ Usage:\n/removecredits <user_id> <credits>"
+        )
+
+# ✅️ Gift credits 
+
+/giftcredits <credits>
+
+@bot.on_message(filters.command("giftcredits") & filters.user(OWNER_ID))
+async def gift_credits_all(client, message):
+    try:
+        _, credits = message.text.split()
+        credits = int(credits)
+
+        if credits <= 0:
+            await message.reply("❌ Credits must be greater than 0.")
+            return
+
+        result = users_collection.update_many(
+            {},
+            {"$inc": {"paid_credits": credits}}
+        )
+
+        await message.reply(
+            f"🎁 Gift Successful!\n\n"
+            f"💳 Credits added per user: {credits}\n"
+            f"👥 Users affected: {result.modified_count}"
+        )
+
+    except Exception:
+        await message.reply(
+            "❌ Usage:\n/giftcredits <credits>"
+        )
+
+await client.send_message(
+    user_id,
+    f"🎉 Gift Alert!\n\n"
+    f"You received {credits} free video credits 🎁"
+)
+
+
 # ✅️ **REFERRAL SYSTEM **
 @bot.on_message(filters.command("referral"))
 async def referral_handler(client, message):
