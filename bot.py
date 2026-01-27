@@ -80,11 +80,13 @@ def get_user(user_id):
     if not user:
         settings = settings_collection.find_one({"_id": "points_settings"}) or {}
         reset_time = settings.get("reset_time", DEFAULT_RESET_TIME)
+
         user = {
             "id": user_id,
             "joined": datetime.datetime.utcnow(),
-            "points": DEFAULT_POINTS,
+            "points": DEFAULT_POINTS,               # daily free points
             "points_reset_time": time.time() + reset_time,
+            "paid_credits": 0,                      # 🔥 NEW
             "referral_points": 0,
             "referrals": [],
             "premium_used": 0,
@@ -187,40 +189,73 @@ async def send_random_video(client, chat_id):
     await refresh_video_cache()
 
     if not video_cache:
-        await client.send_message(chat_id, "⚠ No videos available. Use /index first!")
+        await client.send_message(chat_id, "⚠ No videos available.")
         return
 
-    if chat_id == OWNER_ID:
-        consume = False
-    else:
+    if chat_id != OWNER_ID:
         user = get_user(chat_id)
         user = await reset_points_if_needed(user)
-        if user["points"] > 0:
-            users_collection.update_one({"id": chat_id}, {"$inc": {"points": -1}})
-        elif user["referral_points"] > 0:
-            users_collection.update_one({"id": chat_id}, {"$inc": {"referral_points": -1}})
+
+        # 1️⃣ Daily Free Points
+        if user.get("points", 0) > 0:
+            users_collection.update_one(
+                {"id": chat_id},
+                {"$inc": {"points": -1}}
+            )
+
+        # 2️⃣ Referral Points
+        elif user.get("referral_points", 0) > 0:
+            users_collection.update_one(
+                {"id": chat_id},
+                {"$inc": {"referral_points": -1}}
+            )
+
+        # 3️⃣ Premium Daily Bonus
         elif user.get("premium") and time.time() < user["premium"].get("expiry", 0):
             tier = user["premium"]["tier"]
             max_premium = PREMIUM_TIERS.get(tier, 0)
+
             if user.get("premium_used", 0) < max_premium:
-                users_collection.update_one({"id": chat_id}, {"$inc": {"premium_used": 1}})
+                users_collection.update_one(
+                    {"id": chat_id},
+                    {"$inc": {"premium_used": 1}}
+                )
             else:
-                reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
-                await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}. please upgrade your plan or wait❗️")
-                return
+                pass  # move to paid credits
+
+        # 4️⃣ Paid Credits (NEW)
+        elif user.get("paid_credits", 0) > 0:
+            users_collection.update_one(
+                {"id": chat_id},
+                {"$inc": {"paid_credits": -1}}
+            )
+
         else:
-            reset_time = datetime.datetime.fromtimestamp(user.get("points_reset_time", 0)).strftime("%Y-%m-%d %H:%M:%S")
-            await client.send_message(chat_id, f"⚠️ You have no points left. New points will be added at {reset_time}. please upgrade your plan or wait❗️")
+            reset_time = datetime.datetime.fromtimestamp(
+                user["points_reset_time"]
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
+            await client.send_message(
+                chat_id,
+                f"⚠️ You’ve used all your free videos.\n\n"
+                f"⏳ Free points reset at: {reset_time}\n"
+                f"💎 Buy credits or wait for reset."
+            )
             return
 
     video = video_cache.pop()
     try:
-        message = await client.get_messages(CHANNEL_ID, video["message_id"])
-        if message and message.video:
-            sent_msg = await client.send_video(chat_id, video=message.video.file_id, caption="Thanks 😊", protect_content=True)
+        msg = await client.get_messages(CHANNEL_ID, video["message_id"])
+        if msg and msg.video:
+            sent = await client.send_video(
+                chat_id,
+                msg.video.file_id,
+                caption="Thanks 😊",
+                protect_content=True
+            )
             if AUTO_DELETE_TIME > 0:
                 await asyncio.sleep(AUTO_DELETE_TIME)
-                await sent_msg.delete()
+                await sent.delete()
     except FloodWait as e:
         await asyncio.sleep(e.value)
         await send_random_video(client, chat_id)
@@ -276,12 +311,14 @@ async def check_points(client, message):
     reset_time = datetime.datetime.fromtimestamp(user["points_reset_time"]).strftime("%Y-%m-%d %H:%M:%S")
     time_left = int(user["points_reset_time"] - time.time())
     await message.reply_text(
-        f"⭐ Points: {user.get('points', 0)}\n"
-        f"🤝 Referral Points: {ref}\n"
-        f"💎 Premium Bonus Left: {prem}\n"
-        f"⏳ Next Reset In: {str(datetime.timedelta(seconds=time_left))}\n"
-        f"🕒 Reset At: {reset_time}"
+    f"⭐ Daily Free Points: {user.get('points', 0)}\n"
+    f"🤝 Referral Points: {ref}\n"
+    f"💎 Premium Bonus Left: {prem}\n"
+    f"💳 Paid Credits: {user.get('paid_credits', 0)}\n"
+    f"⏳ Next Reset In: {str(datetime.timedelta(seconds=time_left))}\n"
+    f"🕒 Reset At: {reset_time}"
     )
+
 
 # ✅️ **reset time option **
 @bot.on_message(filters.command("setpoints") & filters.user(OWNER_ID))
@@ -479,6 +516,29 @@ async def list_premium_users(client, message):
         f.write(text_output)
 
     await message.reply_document(file_path, caption="📄 Premium Users List")
+
+
+# ✅️ ** credit system **
+@bot.on_message(filters.command("addcredits") & filters.user(OWNER_ID))
+async def add_credits(client, message):
+    try:
+        _, uid, credits = message.text.split()
+        uid = int(uid)
+        credits = int(credits)
+
+        users_collection.update_one(
+            {"id": uid},
+            {"$inc": {"paid_credits": credits}},
+            upsert=True
+        )
+
+        await message.reply_text(
+            f"✅ Successfully added {credits} paid credits to user {uid}"
+        )
+    except:
+        await message.reply_text(
+            "Usage: /addcredits <user_id> <credits>"
+        )
 
 # ✅️ **REFERRAL SYSTEM **
 @bot.on_message(filters.command("referral"))
