@@ -547,7 +547,6 @@ async def add_credits(client, message):
         )
 
  # ✅️ ** REMOVE CREDITS **
-/removecredits <user_id> <credits>
 
 @bot.on_message(filters.command("removecredits") & filters.user(OWNER_ID))
 async def remove_credits(client, message):
@@ -582,8 +581,6 @@ async def remove_credits(client, message):
         )
 
 # ✅️ Gift credits 
-
-/giftcredits <credits>
 
 @bot.on_message(filters.command("giftcredits") & filters.user(OWNER_ID))
 async def gift_credits_all(client, message):
