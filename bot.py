@@ -581,7 +581,6 @@ async def remove_credits(client, message):
         )
 
 # ✅️ Gift credits 
-
 @bot.on_message(filters.command("giftcredits") & filters.user(OWNER_ID))
 async def gift_credits_all(client, message):
     try:
@@ -603,16 +602,21 @@ async def gift_credits_all(client, message):
             f"👥 Users affected: {result.modified_count}"
         )
 
+        # 🔔 Notify users (optional)
+        for user in users_collection.find({}, {"id": 1}):
+            try:
+                await client.send_message(
+                    user["id"],
+                    f"🎉 Gift Alert!\n\n"
+                    f"You received {credits} free video credits 🎁"
+                )
+            except Exception:
+                pass  # user blocked bot / privacy
+
     except Exception:
         await message.reply(
             "❌ Usage:\n/giftcredits <credits>"
         )
-
-await client.send_message(
-    user_id,
-    f"🎉 Gift Alert!\n\n"
-    f"You received {credits} free video credits 🎁"
-)
 
 
 # ✅️ **REFERRAL SYSTEM **
