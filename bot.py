@@ -24,7 +24,7 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://tgpurpose640:JkxqDWtmLTPtqf43@
 CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1003789202882"))
 OWNER_ID = int(os.getenv("OWNER_ID", "7232121375"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
-AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "4800"))
+AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "43200"))
 DEFAULT_POINTS = int(os.getenv("DEFAULT_POINTS", "10"))
 DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "18000"))
 
@@ -58,10 +58,10 @@ def is_protection_enabled():
 
 # ✅️ Tiers
 PREMIUM_TIERS = {
-    "silver": 10,
-    "gold": 20,
-    "diamond": 30,
-    "platinum": 40
+    "silver": 5,
+    "gold": 10,
+    "diamond": 20,
+    "platinum": 30
 }
 
 REFERRAL_TIERS = {
@@ -436,30 +436,52 @@ async def index_videos(client, message):
 async def show_plans(client, message):
     photo_url = "https://envs.sh/s4V.jpg"
     text = (
-        "💎 **Premium Plans**\n"
-        "• 💠 **Silver** – 10 daily points → Rs. 29\n"
-        "• 💠 **Gold** – 20 daily points → Rs. 59\n"
-        "• 💠 **Diamond** – 30 daily points → Rs. 89\n"
-        "• 💠 **Platinum** – 40 daily points → Rs. 129\n\n"
-        "🎟 **Credits Packages**\n"
-        "• 🎫 20 Credits → Rs. 10\n"
-        "• 🎫 40 Credits → Rs. 20\n"
-        "• 🎫 100 Credits → Rs. 45\n\n"
-        "🔥 **Combo Offers**\n"
-        "• 💎 + 🎫 Platinum + 40 Credits → Rs. 149\n"
-        "• 💎 + 🎫 Diamond + 20 Credits → Rs. 99\n"
-        "• 💎 + 🎫 Gold + 20 Credits → Rs. 69\n\n"
+        "💎 **Premium Plans (Weekly)**\n\n"
+
+        "🥈 **Silver**\n"
+        "• 5 videos / day\n"
+        "• Rs. 19 for 7 days\n\n"
+
+        "🥇 **Gold**\n"
+        "• 10 videos / day\n"
+        "• Rs. 39 for 7 days\n\n"
+
+        "💠 **Diamond**\n"
+        "• 20 videos / day\n"
+        "• Rs. 69 for 7 days\n\n"
+
+        "👑 **Platinum**\n"
+        "• 30 videos / day\n"
+        "• Rs. 99 for 7 days\n\n"
+
+        "━━━━━━━━━━━━━━\n\n"
+
+        "🎟 **Credit Packs (Never Expire)**\n"
+        "• 🎫 20 Credits → Rs. 15\n"
+        "• 🎫 50 Credits → Rs. 35\n"
+        "• 🎫 100 Credits → Rs. 69\n\n"
+
+        "━━━━━━━━━━━━━━\n\n"
+
+        "🔥 **Combo Offers (Best Value)**\n"
+        "• 👑 Platinum + 50 Credits → Rs. 129 ⭐\n"
+        "• 💠 Diamond + 30 Credits → Rs. 89\n"
+        "• 🥇 Gold + 20 Credits → Rs. 49\n\n"
+
+        "━━━━━━━━━━━━━━\n\n"
+
         "⏳ **Premium points reset daily**\n"
-        "💳 **Credits are instant & never expire**\n"
-        "❤️ **Bot consumes points in order:** Free → Premium → Credits\n"
-        "💳 **UPI | 📱 PhonePe | 🎁 Gift Cards Accepted**\n"
-        "✨ **Always check Disclaimer and Help for details**\n"
-        "📞 **Contact us to buy a plan, credits, or combo!**"
+        "💳 **Credits never expire**\n"
+        "🔁 **Usage order:** Free → Premium → Credits\n"
+        "💸 *UPI • PhonePe • Gift Cards accepted*\n\n"
+
+        "📞 **Contact support to buy**"
     )
 
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛒 Buy Plan", url="https://t.me/Xsupprt4bot")]
+        [InlineKeyboardButton("🛒 Buy Now", url="https://t.me/Xsupprt4bot")]
     ])
+
     await message.reply_text(text, reply_markup=buttons)
 
 # ✅️ **PREMIUM SYSTEM**
