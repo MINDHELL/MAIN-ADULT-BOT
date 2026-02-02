@@ -25,7 +25,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1003789202882"))
 OWNER_ID = int(os.getenv("OWNER_ID", "7232121375"))
 WELCOME_IMAGE = os.getenv("WELCOME_IMAGE", "https://envs.sh/n9o.jpg")
 AUTO_DELETE_TIME = int(os.getenv("AUTO_DELETE_TIME", "43200"))
-DEFAULT_POINTS = int(os.getenv("DEFAULT_POINTS", "10"))
+DEFAULT_POINTS = int(os.getenv("DEFAULT_POINTS", "20"))
 DEFAULT_RESET_TIME = int(os.getenv("DEFAULT_RESET_TIME", "18000"))
 
 # ✅ Force Subscribe Setup
@@ -649,7 +649,7 @@ async def gift_credits_all(client, message):
 @bot.on_message(filters.command("referral"))
 async def referral_handler(client, message):
     user_id = message.from_user.id
-    referral_link = f"https://t.me/RundumBot?start=ref-{user_id}"
+    referral_link = f"https://t.me/AdultxmainBot?start=ref-{user_id}"
 
     text = (
         "👥 <b>Invite & Earn Rewards!</b>\n\n"
